@@ -169,59 +169,6 @@ BCRs = unique(sort(intersect(which(is.na(BCR.location)==F), which(BCR.location!=
 
 ############## read through key IMGT files and split by sample
 
-### developer version only
-Correct_IMGT_files_for_example<-function(){
-  file = concat(c(out_dir_raw, "IMGT_sample_ID_mapping.txt"))
-  p1 <- as.matrix(read.csv(file, head=T, sep="\t"))
-  short_ID = p1[,"unique_short_ID"]
-  names(short_ID) = p1[,1]
-  
-  files = c(concat(c(dir_IMGT_BCR,"2_IMGT-gapped-nt-sequences.txt")),concat(c(dir_IMGT_TCR,"2_IMGT-gapped-nt-sequences.txt")),
-            concat(c(dir_IMGT_BCR,"8_V-REGION-nt-mutation-statistics.txt")),concat(c(dir_IMGT_TCR,"8_V-REGION-nt-mutation-statistics.txt")),
-            concat(c(dir_IMGT_BCR,"5_AA-sequences.txt")),concat(c(dir_IMGT_TCR,"5_AA-sequences.txt")),
-            concat(c(dir_IMGT_BCR,"6_Junction.txt")),concat(c(dir_IMGT_TCR,"6_Junction.txt")))
-  for(f in c(7:length(files))){
-    p <- as.matrix(read.csv(files[f], head=T, sep="\t"))
-    id = as.character(p[,"Sequence.ID"])
-    orig_sample = strsplit(id, "||", fixed = T)
-    orig_id = orig_sample
-    for(i in c(1:length(orig_sample))){
-      orig_id[i] = orig_id[[i]][1]
-      orig_sample[i] = orig_sample[[i]][2]}
-    orig_sample = unlist(orig_sample)
-    orig_sample1 = strsplit(id, "__", fixed = T)
-    orig_sample = unlist(orig_sample)
-    
-    orig_id = unlist(orig_id)
-    orig_id = strsplit(orig_id, "__", fixed = T)
-    for(i in c(1:length(orig_id))){
-      orig_id[i] = orig_id[[i]][1]}
-    orig_id = unlist(orig_id)
-    
-    orig_sample1 = orig_sample
-    orig_sample1s = sort(unique(orig_sample1))
-    match = matrix(data = 0,nrow = length(orig_sample1s), ncol = length(sample_id), dimnames = c(list(orig_sample1s),list(sample_id)))
-    match_ids = orig_sample1s
-    for(i in c(1:length(orig_sample1s))){
-      for(c in c(1:length(sample_id))){
-        w = grep(orig_sample1s[i], sample_id[c])
-        match[i,c] = length(w)
-        if(length(w)!=0){
-          match_ids[i] = sample_id[c]}
-      }
-    }
-    cbind(match_ids, orig_sample1s)
-    matched_sample =match_ids[match(orig_sample,orig_sample1s)]
-    table(short_ID[matched_sample])
-    
-    id_new = apply(cbind(orig_id,short_ID[matched_sample]),1,paste,collapse = "||")
-    p[,"Sequence.ID"] = id_new
-    
-    write.table(p, file = files[f], append = FALSE, quote = FALSE, sep = "\t",eol = "\n", na = "NA", dec = ".", row.names = F,col.names = T, qmethod = c("escape", "double"),fileEncoding = "")
-  }
-  
-}
-
 Map_annotations_by_sample<-function(dir_IMGT_BCR, BCRs, dir_IMGT_BCR, sample_id){
   file = concat(c(out_dir_raw, "IMGT_sample_ID_mapping.txt"))
   p1 <- as.matrix(read.csv(file, head=T, sep="\t"))
