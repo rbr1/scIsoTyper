@@ -148,7 +148,7 @@ Group_together_fasta_files_for_IMGT<-function(TCR.location, BCR.location, sample
 }
 
 Group_together_fasta_files_for_IMGT(TCR.location, BCR.location, sample_id, out_dir_raw,batch) ## this will print out the cumulative number of sequences per sample and the location of the output file
-
+## All_filtered_contig_TCR_XX.fasta and All_filtered_contig_BCR_XX.fasta files to upload to IMGT
 
 ############## upload the above files to IMGT for annotation
 ############## once processed, please download and unpackage into a directory specified below
@@ -169,7 +169,7 @@ BCRs = unique(sort(intersect(which(is.na(BCR.location)==F), which(BCR.location!=
 
 ############## read through key IMGT files and split by sample
 
-Map_annotations_by_sample<-function(dir_IMGT_BCR, BCRs, dir_IMGT_BCR, sample_id){
+Map_annotations_by_sample<-function(dir_IMGT_TCR, dir_IMGT_BCR, TCRs, BCRs,  sample_id){
   file = concat(c(out_dir_raw, "IMGT_sample_ID_mapping.txt"))
   p1 <- as.matrix(read.csv(file, head=T, sep="\t"))
   short_ID = p1[,"unique_short_ID"]
@@ -361,7 +361,7 @@ Map_annotations_by_sample<-function(dir_IMGT_BCR, BCRs, dir_IMGT_BCR, sample_id)
 }
 
 ## this will take a while so I advise to get a cup of tea now
-Map_annotations_by_sample(dir_IMGT_BCR, BCRs, dir_IMGT_BCR, sample_id)
+Map_annotations_by_sample(dir_IMGT_TCR, dir_IMGT_BCR, TCRs, BCRs,  sample_id)
 
 ############## gather together BCR IgH/L or TCRA/B chain information
 Gather_VDJ_information<-function(sample, fasta_file, csv_file, gene, filtered_fasta_contig_file, 
@@ -520,7 +520,7 @@ Group_sequence_files<-function(combined_sequence_file, cell_info_files,
   write.dna(unique_seqs, combined_sequence_file, format = "fasta", append = FALSE)
   
   ## run CD-hit
-  cd_hit_directory = "/users/immune-rep/mfj169/REPERTOIRE_ANALYSES/BIN/cd-hit-v4.5.7-2011-12-16/"
+  cd_hit_directory = "/well/immune-rep/shared/CODE/cd-hit-v4.5.7-2011-12-16/"
   command= concat(c(cd_hit_directory,"cd-hit -i ",combined_sequence_file," -o ",tmp_file," -c 0.98 -d 180 -T 10  -M 0 -AL 40 "))
   print (command)
   system(command)
