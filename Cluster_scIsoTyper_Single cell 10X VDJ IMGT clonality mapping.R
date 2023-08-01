@@ -499,7 +499,7 @@ for(c in TCRs){
     gene = "TCR"
     filtered_fasta_contig_file = concat(c(out_dir_raw, "Sequences_",sample,"_",gene))
     immune_cell_annotation_file = concat(c(out_dir_raw, "Cell_annotation_",sample,"_",gene,".txt"))
-    trimmed_sequences_VDJ = concat(c(out_dir_raw, "Trimmed_sequences_",sample,"_",gene))
+    trimmed_sequences_VDJ = concat(c(out_dir_raw, "IMGT_filtered_amino_acids_",sample,"_",gene))
     IMGT_filtered_annotation = concat(c(out_dir_raw,"IMGT_filtered_annotation_",type,"_",sample,".txt"))
     Gather_VDJ_information(sample, fasta_file, csv_file, gene, filtered_fasta_contig_file, immune_cell_annotation_file, trimmed_sequences_VDJ, IMGT_filtered_annotation, type)
     print(sample)
