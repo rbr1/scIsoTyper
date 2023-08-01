@@ -7,37 +7,68 @@
 # module load Harmony/1.0.0-foss-2019a-R-3.6.0
 # R
 
+
+.libPaths(c( "~/R/3.4.3-openblas-0.2.18-omp-gcc5.4.0", .libPaths()))
+.libPaths(c("/users/immune-rep/kvi236/INSTALLED_PROGRAMS/R_MODULES", .libPaths()))
+options(repos='http://cran.ma.imperial.ac.uk/')
+
 concat = function(v) {
-	res = ""
-	for (i in 1:length(v)){res = paste(res,v[i],sep="")}
-	res
+  res = ""
+  for (i in 1:length(v)){res = paste0(res,v[i])}
+  res
 }
 add.alpha <- function(col, alpha=1){
   if(missing(col))
     stop("Please provide a vector of colours.")
   apply(sapply(col, col2rgb)/255, 2, 
-                     function(x) 
-                       rgb(x[1], x[2], x[3], alpha=alpha)) }
+        function(x) 
+          rgb(x[1], x[2], x[3], alpha=alpha)) }
+
 
 a = 1
 if(a==1){
-	file="/well/immune-rep/shared/10X_GENOMICS/PDAC_LT_SURVIVORS/Samples_PDAC_LT_batch1.txt"
-	p <- as.matrix(read.csv(file, head=T, sep="\t"))
-	p=p[which(p[,1]!=""),]
-	sample_id = as.character(p[,"Sample_Name"])
-	sample_output_id = as.character(p[,"Sample_Name"])
-	BCR.location = as.character(p[,"Location_of_BCR"])
-	#BCR.location = gsub("all_contig","filtered_contig",BCR.location)
-	TCR.location = as.character(p[,"Location_of_TCR"])
-	#TCR.location = gsub("all_contig","filtered_contig",TCR.location)
-	Overall_sample_group = as.character(p[,"Patient"])
-	Site = as.character(p[,"Sample_type"])
-	batch = "PDAC_LT1"
-	out_dir = "/well/immune-rep/shared/10X_GENOMICS/PDAC_LT_SURVIVORS/VDJ/"
-	out_dir_raw = "/well/immune-rep/shared/10X_GENOMICS/PDAC_LT_SURVIVORS/VDJ/"
-	}
-	
+  file="/users/immune-rep/mfj169/SINGLE_CELL_RNA_SEQ/10X_PIPELINE/Samples_PDAC150K_2.txt"
+  p <- as.matrix(read.csv(file, head=T, sep="\t"))
+  p=p[which(p[,"To_use_in_PDAC150K"]=="Yes"),]
+  sample_id = as.character(p[,"Sample_Name"])
+  sample_output_id = as.character(p[,"Sample_Name"])
+  BCR.location = as.character(p[,"Location_of_BCR"])
+  BCR.location = gsub("all_contig","filtered_contig",BCR.location)
+  TCR.location = as.character(p[,"Location_of_TCR"])
+  TCR.location = gsub("all_contig","filtered_contig",TCR.location)
+  Overall_sample_group = as.character(p[,"Patient"])
+  Site = as.character(p[,"Sample_type"])
+  batch = "PDAC150Ka"
+  out_dir = "/well/immune-rep/shared/10X_GENOMICS/PDAK150K_WORKING_DATA/VDJ/"
+  out_dir_raw = "/well/immune-rep/shared/10X_GENOMICS/PDAK150K_WORKING_DATA/VDJ/"
+}
+
+# or for Sakina: 
+a = 1
+if(a==1){
+  file="/gpfs3/well/immune-rep/shared/10X_GENOMICS/P210298_SA/P210298/Samples_PDAC_LT.txt"
+  p <- as.matrix(read.csv(file, head=T, sep="\t"))
+  p=p[which(p[,1]!=""),]
+  sample_id = as.character(p[,"Sample_Name"])
+  sample_output_id = as.character(p[,"Sample_Name"])
+  GEX.location = as.character(p[,"Location_of_GEX"])
+  CITE.location = as.character(p[,"Location_of_CITE"])
+  BCR.location = as.character(p[,"Location_of_BCR"])
+  BCR.location = gsub("all_contig","filtered_contig",BCR.location)
+  TCR.location = as.character(p[,"Location_of_TCR"])
+  TCR.location = gsub("all_contig","filtered_contig",TCR.location)
+  Overall_sample_group = as.character(p[,"Patient"])
+  Site = as.character(p[,"Sample_type"])
+  batch = "PDAC_LTS"
+  out_dir = "/gpfs3/well/immune-rep/shared/10X_GENOMICS/P210298_SA/P210298/LT_wdir/"
+  out_dir_raw = "/gpfs3/well/immune-rep/shared/10X_GENOMICS/P210298_SA/P210298/LT_wdir/"
+}
+
+
 ################# check files exist from input folder
+TCRs = unique(sort(intersect(which(is.na(TCR.location)==F), which(TCR.location!=''))))
+BCRs = unique(sort(intersect(which(is.na(BCR.location)==F), which(BCR.location!=''))))
+
 Check_files_exist<-function(TCR.location, BCR.location, sample_id){
   TCRs = unique(sort(intersect(which(is.na(TCR.location)==F), which(TCR.location!=''))))
   BCRs = unique(sort(intersect(which(is.na(BCR.location)==F), which(BCR.location!=''))))
@@ -148,7 +179,7 @@ Group_together_fasta_files_for_IMGT<-function(TCR.location, BCR.location, sample
 }
 
 Group_together_fasta_files_for_IMGT(TCR.location, BCR.location, sample_id, out_dir_raw,batch) ## this will print out the cumulative number of sequences per sample and the location of the output file
-## All_filtered_contig_TCR_XX.fasta and All_filtered_contig_BCR_XX.fasta files to upload to IMGT
+
 
 ############## upload the above files to IMGT for annotation
 ############## once processed, please download and unpackage into a directory specified below
@@ -169,7 +200,7 @@ BCRs = unique(sort(intersect(which(is.na(BCR.location)==F), which(BCR.location!=
 
 ############## read through key IMGT files and split by sample
 
-Map_annotations_by_sample<-function(dir_IMGT_TCR, dir_IMGT_BCR, TCRs, BCRs,  sample_id){
+Map_annotations_by_sample<-function(dir_IMGT_TCR, BCRs, TCRs,dir_IMGT_BCR, sample_id){
   file = concat(c(out_dir_raw, "IMGT_sample_ID_mapping.txt"))
   p1 <- as.matrix(read.csv(file, head=T, sep="\t"))
   short_ID = p1[,"unique_short_ID"]
@@ -187,7 +218,7 @@ Map_annotations_by_sample<-function(dir_IMGT_TCR, dir_IMGT_BCR, TCRs, BCRs,  sam
     seq = toupper (as.character(p1[,"V.D.J.REGION"]))
     seq = gsub(".","",seq,fixed = T)
     seq1 = toupper(as.character(p1[,"V.J.REGION"]))
-
+    
     orig_sample = strsplit(id, "||", fixed = T)
     orig_id = orig_sample
     for(i in c(1:length(orig_sample))){
@@ -247,7 +278,7 @@ Map_annotations_by_sample<-function(dir_IMGT_TCR, dir_IMGT_BCR, TCRs, BCRs,  sam
       v_mm[i] = v_mm[[i]][1]}
     v_mm = unlist(v_mm)
     names(v_mm) = id
-     
+    
     p <- as.matrix(read.csv(files2[f], head=T, sep="\t"))
     p1 = p[which(p[,"V.DOMAIN.Functionality"]!="No results"),]
     id = as.character(p1[,"Sequence.ID"])
@@ -303,7 +334,7 @@ Map_annotations_by_sample<-function(dir_IMGT_TCR, dir_IMGT_BCR, TCRs, BCRs,  sam
     print(concat(c(files[f]," run completed")))
     
   }
-    
+  
   types = c("BCR","TCR")
   files = c(concat(c(dir_IMGT_BCR,"5_AA-sequences.txt")),concat(c(dir_IMGT_TCR,"5_AA-sequences.txt")))
   for(f in c(1:length(files))){
@@ -361,7 +392,7 @@ Map_annotations_by_sample<-function(dir_IMGT_TCR, dir_IMGT_BCR, TCRs, BCRs,  sam
 }
 
 ## this will take a while so I advise to get a cup of tea now
-Map_annotations_by_sample(dir_IMGT_TCR, dir_IMGT_BCR, TCRs, BCRs,  sample_id)
+Map_annotations_by_sample(dir_IMGT_TCR, BCRs,TCRs, dir_IMGT_BCR, sample_id)
 
 ############## gather together BCR IgH/L or TCRA/B chain information
 Gather_VDJ_information<-function(sample, fasta_file, csv_file, gene, filtered_fasta_contig_file, 
@@ -411,31 +442,30 @@ Gather_VDJ_information<-function(sample, fasta_file, csv_file, gene, filtered_fa
     if(length(w1)==1){
       mat_cells[cell_ids[c],c("contig1","chain1","constant_region1","n_umis1","V_gene_10X1",
                               "J_gene_10X1","cdr3_aa1", "cdr3_nn1","V_gene1","J_gene1", "V_mm1", "chain_functionality1")]= 
-        c(p0[w1,c("contig_id","chain","c_gene","umis","v_gene","j_gene")], 
-          p1[p0[w1,"contig_id"],])
+        c(p0[w1,c("contig_id","chain","c_gene","umis","v_gene","j_gene")], p1[p0[w1,"contig_id"],], p0[w1,'productive'])
     }
     if(length(w1)>1){
+      break
       px = p0[w1,]
       px = px[order(as.numeric(px[,'umis']), decreasing = T),]
       mat_cells[cell_ids[c],c("contig1","chain1","constant_region1","n_umis1","V_gene_10X1",
                               "J_gene_10X1","cdr3_aa1", "cdr3_nn1","V_gene1","J_gene1", "V_mm1", "chain_functionality1")]= 
         c(px[1,c("contig_id","chain","c_gene","umis","v_gene","j_gene")], 
-          p1[px[1,"contig_id"],])
+          p1[px[1,"contig_id"],],px[1,'productive'])
       mat_cells[cell_ids[c],c("mixed_contig_chain1","mixed_contig_n_umis1")]= c(px[2,c("contig_id","umis")])
     }
     ## chain 2: 
     w1 = intersect(w, w_chain2)
     if(length(w1)==1){
       mat_cells[cell_ids[c],c("contig2","chain2","constant_region2","n_umis2","V_gene2","J_gene2","cdr3_aa2", "cdr3_nn2", "V_gene2","J_gene2","V_mm2", "chain_functionality2")]= 
-        c(p0[w1,c("contig_id","chain","c_gene","umis","v_gene","j_gene")], 
-          p1[p0[w1,"contig_id"],])
+        c(p0[w1,c("contig_id","chain","c_gene","umis","v_gene","j_gene")], p1[p0[w1,"contig_id"],], p0[w1,'productive'])
     }
     if(length(w1)>1){
       px = p0[w1,]
       px = px[order(as.numeric(px[,'umis']), decreasing = T),]
       mat_cells[cell_ids[c],c("contig2","chain2","constant_region2","n_umis2","V_gene2","J_gene2","cdr3_aa2", "cdr3_nn2", "V_gene2","J_gene2","V_mm2", "chain_functionality2")]= 
         c(px[1,c("contig_id","chain","c_gene","umis","v_gene","j_gene")], 
-          p1[px[1,"contig_id"],])
+          p1[px[1,"contig_id"],],px[1,'productive'])
       mat_cells[cell_ids[c],c("mixed_contig_chain2","mixed_contig_n_umis2")]= c(px[2,c("contig_id","umis")])
     }
   }
@@ -445,35 +475,35 @@ Gather_VDJ_information<-function(sample, fasta_file, csv_file, gene, filtered_fa
 BCRs = unique(sort(intersect(which(is.na(BCR.location)==F), which(BCR.location!=''))))
 type = "BCR"
 for(c in BCRs){
-	if(is.na(BCR.location[c])==F){
-		sample = sample_id[c]
-		fasta_file = concat(c(out_dir_raw, "/IMGT_filtered_contig_", type,"_", sample,".fasta"))
-		csv_file = BCR.location[c]
-		gene = "IG"
-		filtered_fasta_contig_file = concat(c(out_dir_raw, "Sequences_",sample,"_",gene))
-		immune_cell_annotation_file = concat(c(out_dir_raw, "Cell_annotation_",sample,"_",gene,".txt"))
-		trimmed_sequences_VDJ = concat(c(out_dir_raw, "Trimmed_sequences_",sample,"_",gene))
-		IMGT_filtered_annotation = concat(c(out_dir_raw,"IMGT_filtered_annotation_",type,"_",sample,".txt"))
-		Gather_VDJ_information(sample, fasta_file, csv_file, gene, filtered_fasta_contig_file, immune_cell_annotation_file, trimmed_sequences_VDJ, IMGT_filtered_annotation, type)
-		print(sample)
-	}
+  if(is.na(BCR.location[c])==F){
+    sample = sample_id[c]
+    fasta_file = concat(c(out_dir_raw, "/IMGT_filtered_contig_", type,"_", sample,".fasta"))
+    csv_file = BCR.location[c]
+    gene = "IG"
+    filtered_fasta_contig_file = concat(c(out_dir_raw, "Sequences_",sample,"_",gene))
+    immune_cell_annotation_file = concat(c(out_dir_raw, "Cell_annotation_",sample,"_",gene,".txt"))
+    trimmed_sequences_VDJ = concat(c(out_dir_raw, "IMGT_filtered_amino_acids_",sample,"_",gene))
+    IMGT_filtered_annotation = concat(c(out_dir_raw,"IMGT_filtered_annotation_",type,"_",sample,".txt"))
+    Gather_VDJ_information(sample, fasta_file, csv_file, gene, filtered_fasta_contig_file, immune_cell_annotation_file, trimmed_sequences_VDJ, IMGT_filtered_annotation, type)
+    print(sample)
+  }
 }
 
 TCRs = unique(sort(intersect(which(is.na(TCR.location)==F), which(TCR.location!=''))))
 type = "TCR"
 for(c in TCRs){
-	if(is.na(TCR.location[c])==F){
-	  sample = sample_id[c]
-	  fasta_file = concat(c(out_dir_raw, "/IMGT_filtered_contig_", type,"_", sample,".fasta"))
-	  csv_file = TCR.location[c]
-	  gene = "TCR"
-	  filtered_fasta_contig_file = concat(c(out_dir_raw, "Sequences_",sample,"_",gene))
-	  immune_cell_annotation_file = concat(c(out_dir_raw, "Cell_annotation_",sample,"_",gene,".txt"))
-	  trimmed_sequences_VDJ = concat(c(out_dir_raw, "Trimmed_sequences_",sample,"_",gene))
-	  IMGT_filtered_annotation = concat(c(out_dir_raw,"IMGT_filtered_annotation_",type,"_",sample,".txt"))
-	  Gather_VDJ_information(sample, fasta_file, csv_file, gene, filtered_fasta_contig_file, immune_cell_annotation_file, trimmed_sequences_VDJ, IMGT_filtered_annotation, type)
-	  print(sample)
-	}
+  if(is.na(TCR.location[c])==F){
+    sample = sample_id[c]
+    fasta_file = concat(c(out_dir_raw, "/IMGT_filtered_contig_", type,"_", sample,".fasta"))
+    csv_file = TCR.location[c]
+    gene = "TCR"
+    filtered_fasta_contig_file = concat(c(out_dir_raw, "Sequences_",sample,"_",gene))
+    immune_cell_annotation_file = concat(c(out_dir_raw, "Cell_annotation_",sample,"_",gene,".txt"))
+    trimmed_sequences_VDJ = concat(c(out_dir_raw, "Trimmed_sequences_",sample,"_",gene))
+    IMGT_filtered_annotation = concat(c(out_dir_raw,"IMGT_filtered_annotation_",type,"_",sample,".txt"))
+    Gather_VDJ_information(sample, fasta_file, csv_file, gene, filtered_fasta_contig_file, immune_cell_annotation_file, trimmed_sequences_VDJ, IMGT_filtered_annotation, type)
+    print(sample)
+  }
 }
 
 ############## clonality analysis TCRs/BCRs per group
@@ -633,65 +663,77 @@ Group_sequence_files<-function(combined_sequence_file, cell_info_files,
 ### BCR
 BCRs = unique(sort(intersect(which(is.na(BCR.location)==F), which(BCR.location!=''))))
 for(o in c(1:length(Overall_sample_groups))){
-	samples_group = sample_id [intersect(BCRs ,which(Overall_sample_group ==Overall_sample_groups[o]))]
-	if(length(samples_group)>0){
-		#check which have BCRs/TCRs
-		grouped_sample_id = Overall_sample_groups[o]
-		chains = c("IGH","IGL")
-		for(ch in c(1:length(chains))){
-		  chain = chains[ch]
-	    samples_ids = paste0(samples_group[w], collapse = ",")
-	    sample_fastas = paste0(concat(c(out_dir_raw,"Trimmed_sequences_")), samples_group,"_IG_",chain,".fasta" )
-	    amino_acid_fastas = paste0(concat(c(out_dir_raw, "IMGT_filtered_amino_acids_BCR_")), samples_group,".fasta" )
-	    info = file.info(sample_fastas)
-	    w = which(info$size != 0)
-	    sample_fastas = sample_fastas[w]
-	    amino_acid_fastas = amino_acid_fastas[w]
-	    
-	    cell_info_files = paste0(concat(c(out_dir_raw,"Cell_annotation_")), samples_group[w],"_IG.txt" )
-		  id = concat(c(grouped_sample_id ,"_",chain))
-
-		  combined_sequence_file = concat(c( out_dir_raw,"Sequences_combined_",Overall_sample_groups[o],"_",chain,".fasta"))
-		  tmp_file = concat(c( out_dir_raw,"Tmp_",Overall_sample_groups[o],"_",chain))
-		  output_file_prefix = concat(c( out_dir_raw,"Edges_",Overall_sample_groups[o],"_",chain))
-		  cluster_file = concat(c( out_dir_raw,"Cluster_identities_",Overall_sample_groups[o],"_",chain,".txt"))
-		  
-		  Group_sequence_files(combined_sequence_file, cell_info_files, sample_fastas,id,samples_group,amino_acid_fastas,output_file_prefix,cluster_file)
-		}
-	}
+  samples_group = sample_id [intersect(BCRs ,which(Overall_sample_group ==Overall_sample_groups[o]))]
+  print(o)
+  if(length(samples_group)>0){
+    p=1
+    #check which have BCRs/TCRs
+    grouped_sample_id = Overall_sample_groups[o]
+    chains = c("IGH","IGL")
+    for(ch in c(1:length(chains))){
+      print(ch)
+      chain = chains[ch]
+      if(p<= length(samples_group)){
+        samples_ids = paste0(samples_group[p], collapse = ",")
+        sample_fastas = paste0(concat(c(out_dir_raw,"Trimmed_sequences_")), samples_group[p],"_IG_",chain,".fasta" )
+        amino_acid_fastas = paste0(concat(c(out_dir_raw, "IMGT_filtered_amino_acids_BCR_")), samples_group[p],".fasta" )
+        #info = file.info(sample_fastas)
+        #w = which(info$size != 0)
+        # sample_fastas = sample_fastas[w]
+        #amino_acid_fastas = amino_acid_fastas[w]
+        
+        cell_info_files = paste0(concat(c(out_dir_raw,"Cell_annotation_")), samples_group[p],"_IG.txt" )
+        id = concat(c(grouped_sample_id ,"_",chain))
+        
+        combined_sequence_file = concat(c( out_dir_raw,"Sequences_combined_",Overall_sample_groups[o],"_",chain,".fasta"))
+        tmp_file = concat(c( out_dir_raw,"Tmp_",Overall_sample_groups[o],"_",chain))
+        output_file_prefix = concat(c( out_dir_raw,"Edges_",Overall_sample_groups[o],"_",chain))
+        cluster_file = concat(c( out_dir_raw,"Cluster_identities_",Overall_sample_groups[o],"_",chain,".txt"))
+        
+        Group_sequence_files(combined_sequence_file, cell_info_files, sample_fastas,id,samples_group,amino_acid_fastas,output_file_prefix,cluster_file)
+        p = p+1
+      }
+    }
+  }
 }
 
 ### TCR
 TCRs = unique(sort(intersect(which(is.na(TCR.location)==F), which(TCR.location!=''))))
 for(o in c(1:length(Overall_sample_groups))){
+  #o=5
   samples_group = sample_id [intersect(TCRs ,which(Overall_sample_group ==Overall_sample_groups[o]))]
+  print(o)
   if(length(samples_group)>0){
+    p=1
     #check which have BCRs/TCRs
     grouped_sample_id = Overall_sample_groups[o]
     chains = c("TRA","TRB")
     for(ch in c(1:length(chains))){
+      print(ch)
       chain = chains[ch]
-      samples_ids = paste0(samples_group[w], collapse = ",")
-      sample_fastas = paste0(concat(c(out_dir_raw,"Trimmed_sequences_")), samples_group,"_TCR_",chain,".fasta" )
-      amino_acid_fastas = paste0(concat(c(out_dir_raw, "IMGT_filtered_amino_acids_TCR_")), samples_group,".fasta" )
-      info = file.info(sample_fastas)
-      w = which(info$size != 0)
-      sample_fastas = sample_fastas[w]
-      amino_acid_fastas = amino_acid_fastas[w]
-      
-      cell_info_files = paste0(concat(c(out_dir_raw,"Cell_annotation_")), samples_group[w],"_TCR.txt" )
-      id = concat(c(grouped_sample_id ,"_",chain))
-      
-      combined_sequence_file = concat(c( out_dir_raw,"Sequences_combined_",Overall_sample_groups[o],"_",chain,".fasta"))
-      tmp_file = concat(c( out_dir_raw,"Tmp_",Overall_sample_groups[o],"_",chain))
-      output_file_prefix = concat(c( out_dir_raw,"Edges_",Overall_sample_groups[o],"_",chain))
-      cluster_file = concat(c( out_dir_raw,"Cluster_identities_",Overall_sample_groups[o],"_",chain,".txt"))
-      
-      Group_sequence_files(combined_sequence_file, cell_info_files, sample_fastas,id,samples_group,amino_acid_fastas,output_file_prefix,cluster_file)
+      if(p<= length(samples_group)){
+        samples_ids = paste0(samples_group[p], collapse = ",")
+        sample_fastas = paste0(concat(c(out_dir_raw,"Trimmed_sequences_")), samples_group[p],"_TCR_",chain,".fasta" )
+        amino_acid_fastas = paste0(concat(c(out_dir_raw, "IMGT_filtered_amino_acids_TCR_")), samples_group[p],".fasta" )
+        #info = file.info(sample_fastas)
+        #w = which(info$size != 0)
+        # sample_fastas = sample_fastas[w]
+        #amino_acid_fastas = amino_acid_fastas[w]
+        
+        cell_info_files = paste0(concat(c(out_dir_raw,"Cell_annotation_")), samples_group[p],"_TCR.txt" )
+        id = concat(c(grouped_sample_id ,"_",chain))
+        
+        combined_sequence_file = concat(c( out_dir_raw,"Sequences_combined_",Overall_sample_groups[o],"_",chain,".fasta"))
+        tmp_file = concat(c( out_dir_raw,"Tmp_",Overall_sample_groups[o],"_",chain))
+        output_file_prefix = concat(c( out_dir_raw,"Edges_",Overall_sample_groups[o],"_",chain))
+        cluster_file = concat(c( out_dir_raw,"Cluster_identities_",Overall_sample_groups[o],"_",chain,".txt"))
+        
+        Group_sequence_files(combined_sequence_file, cell_info_files, sample_fastas,id,samples_group,amino_acid_fastas,output_file_prefix,cluster_file)
+        p = p+1
+      }
     }
   }
 }
-
 ################# Get VDJ annotation information object
 
 BCRs = unique(sort(intersect(which(is.na(BCR.location)==F), which(BCR.location!=''))))
@@ -699,20 +741,20 @@ TCRs = unique(sort(intersect(which(is.na(TCR.location)==F), which(TCR.location!=
 
 labels.vector =c() ### get all cell IDs
 for(c in c(1:length(sample_id))){
-	if(c %in% BCRs){
-		sample = sample_id[c]
-		cell_info_BCR = paste0(concat(c(out_dir_raw,"Cell_annotation_")), sample,"_IG.txt" )
-		p1 <- as.matrix(read.csv(cell_info_BCR, head=TRUE, sep="\t"))
-		cells = gsub("-1",concat(c("||", sample)), p1[,"X.cell"])
-		labels.vector = c(labels.vector, cells)}
-	if(c %in% TCRs){
-		sample = sample_id[c]
-		cell_info_TCR = paste0(concat(c(out_dir_raw,"Cell_annotation_")), sample,"_TCR.txt" )
-		p1 <- as.matrix(read.csv(cell_info_TCR, head=TRUE, sep="\t"))
-		cells = gsub("-1",concat(c("||", sample)), p1[,"X.cell"])
-		labels.vector = c(labels.vector, cells)
-	}
-	print (c)
+  if(c %in% BCRs){
+    sample = sample_id[c]
+    cell_info_BCR = paste0(concat(c(out_dir_raw,"Cell_annotation_")), sample,"_IG.txt" )
+    p1 <- as.matrix(read.csv(cell_info_BCR, head=TRUE, sep="\t"))
+    cells = gsub("-1",concat(c("||", sample)), p1[,"X.cell"])
+    labels.vector = c(labels.vector, cells)}
+  if(c %in% TCRs){
+    sample = sample_id[c]
+    cell_info_TCR = paste0(concat(c(out_dir_raw,"Cell_annotation_")), sample,"_TCR.txt" )
+    p1 <- as.matrix(read.csv(cell_info_TCR, head=TRUE, sep="\t"))
+    cells = gsub("-1",concat(c("||", sample)), p1[,"X.cell"])
+    labels.vector = c(labels.vector, cells)
+  }
+  print (c)
 }
 labels.vector = sort(unique(labels.vector))
 sample.vector = strsplit(labels.vector, "||", fixed = T)
@@ -720,32 +762,32 @@ for(i in c(1:length(sample.vector))){sample.vector[i]=sample.vector[[i]][2]}
 sample.vector = unlist(sample.vector)
 
 headers = c( "X.cell","contig1","chain1","constant_region1","n_umis1","V_gene_10X1",
-"J_gene_10X1","cdr3_aa1","cdr3_nn1","V_gene1","J_gene1","V_mm1" , "chain_functionality1","mixed_contig_chain1","mixed_contig_n_umis1","contig2", "chain2", "constant_region2",
-"n_umis2","V_gene2","J_gene2", "cdr3_aa2","cdr3_nn2","V_gene2.1", "J_gene2.1","V_mm2","chain_functionality2","mixed_contig_chain2","mixed_contig_n_umis2")
+             "J_gene_10X1","cdr3_aa1","cdr3_nn1","V_gene1","J_gene1","V_mm1" , "chain_functionality1","mixed_contig_chain1","mixed_contig_n_umis1","contig2", "chain2", "constant_region2",
+             "n_umis2","V_gene2","J_gene2", "cdr3_aa2","cdr3_nn2","V_gene2.1", "J_gene2.1","V_mm2","chain_functionality2","mixed_contig_chain2","mixed_contig_n_umis2")
 m_VDJ_BCR = matrix(data = "-", nrow = length(labels.vector), ncol = length(headers), dimnames = c(list(labels.vector), list(headers)))
 m_VDJ_TCR = matrix(data = "-", nrow = length(labels.vector), ncol = length(headers), dimnames = c(list(labels.vector), list(headers)))
 
 
 for(c in c(1:length(sample_id))){
-	sample = sample_id[c]
-	cell_info_BCR = paste0(concat(c(out_dir_raw,"Cell_annotation_")), sample,"_IG.txt" )
-	p1 <- as.matrix(read.csv(cell_info_BCR, head=TRUE, sep="\t"))
-	cells = gsub("-1",concat(c("||", sample)), p1[,"X.cell"])
-	w = which(cells %in% labels.vector)
-	m_VDJ_BCR[cells[w], ] = p1[w,headers]
-	print(concat(c(c," ",sample_id[c])))
-	print(table(m_VDJ_BCR[,"chain1"]))
+  sample = sample_id[c]
+  cell_info_BCR = paste0(concat(c(out_dir_raw,"Cell_annotation_")), sample,"_IG.txt" )
+  p1 <- as.matrix(read.csv(cell_info_BCR, head=TRUE, sep="\t"))
+  cells = gsub("-1",concat(c("||", sample)), p1[,"X.cell"])
+  w = which(cells %in% labels.vector)
+  m_VDJ_BCR[cells[w], ] = p1[w,headers]
+  print(concat(c(c," ",sample_id[c])))
+  print(table(m_VDJ_BCR[,"chain1"]))
 }
 
 for(c in c(1:length(sample_id))){
-	sample = sample_id[c]
-	cell_info_TCR = paste0(concat(c(out_dir_raw,"Cell_annotation_")), sample,"_TCR.txt" )
-	p1 <- as.matrix(read.csv(cell_info_TCR, head=TRUE, sep="\t"))
-	cells = gsub("-1",concat(c("||", sample)), p1[,"X.cell"])
-	w = which(cells %in% labels.vector)
-	m_VDJ_TCR[cells[w], ] = p1[w,headers]
-	print(concat(c(c," ",sample_id[c])))
-	print(table(m_VDJ_TCR[,"chain1"]))
+  sample = sample_id[c]
+  cell_info_TCR = paste0(concat(c(out_dir_raw,"Cell_annotation_")), sample,"_TCR.txt" )
+  p1 <- as.matrix(read.csv(cell_info_TCR, head=TRUE, sep="\t"))
+  cells = gsub("-1",concat(c("||", sample)), p1[,"X.cell"])
+  w = which(cells %in% labels.vector)
+  m_VDJ_TCR[cells[w], ] = p1[w,headers]
+  print(concat(c(c," ",sample_id[c])))
+  print(table(m_VDJ_TCR[,"chain1"]))
 }
 
 clone1 = rep("-", length(labels.vector))
@@ -758,86 +800,86 @@ run = NULL
 contig1 = apply(cbind(m_VDJ_TCR[, "contig1"], sample.vector), 1, paste, collapse="||")
 contig2 = apply(cbind(m_VDJ_TCR[, "contig2"], sample.vector), 1, paste, collapse="||")
 for(o in c(1:length(Overall_sample_groups))){
-	cluster_file1 = paste0(concat(c(out_dir_raw,"Cluster_identities_")), Overall_sample_groups[o],"_TRA.txt" )
-	cluster_file2 = paste0(concat(c(out_dir_raw,"Cluster_identities_")), Overall_sample_groups[o],"_TRB.txt" )
+  cluster_file1 = paste0(concat(c(out_dir_raw,"Cluster_identities_")), Overall_sample_groups[o],"_TRA.txt" )
+  cluster_file2 = paste0(concat(c(out_dir_raw,"Cluster_identities_")), Overall_sample_groups[o],"_TRB.txt" )
   cluster_files = c(cluster_file1, cluster_file2)
-	types = c("TRA","TRB")
-	info = file.info(cluster_files)
-	w = which(info$size != 0)
-	if(length(w)>0){
-		for(c in c(1:length(cluster_files))){
-			p1 <- as.matrix(read.csv(cluster_files[c], head=F, sep="\t"))
-			p1=p1[-1,]
-			cells = p1[,2]#gsub("-1",concat(c("||", sample_output_id[c])), p1[,3])
-			clone = p1[,1]
-			clone = paste (as.numeric(clone), concat(c("||",Overall_sample_groups[o])))
-			clone = gsub(" ", "", clone)
-			cells = strsplit(cells,"||", fixed = T)
-			cell=NULL
-			sample_source = NULL
-			for(i in c(1:length(cells))){
-				cell = c(cell, cells[[i]][1])
-				sample_source = c(sample_source, cells[[i]][2])
-			}
-			m = sample_id [match(sample_source, sample_id)]
-			cells = apply(cbind(cell, m), 1, paste, collapse="||")
-			names(clone) = cells
-			if(types[c] %in% c("TRA")){
-			  cells_use = cells[which(cells %in% contig1)]
-			  clone_use = clone[cells_use]
-			  m_VDJ_TCR[match(cells_use, contig1),"clone1"] = clone_use
-			}
-			if(types[c] %in% c("TRB")){
-			  cells_use = cells[which(cells %in% contig2)]
-			  clone_use = clone[cells_use]
-			  m_VDJ_TCR[match(cells_use, contig2),"clone2"] = clone_use
-			}
-		}
-	}
-	print(concat(c("Number of matched TRA clones: ",length(which(m_VDJ_TCR[,"clone1"]!='-')))))
+  types = c("TRA","TRB")
+  info = file.info(cluster_files)
+  w = which(info$size != 0)
+  if(length(w)>0){
+    for(c in c(1:length(cluster_files))){
+      p1 <- as.matrix(read.csv(cluster_files[c], head=F, sep="\t"))
+      p1=p1[-1,]
+      cells = p1[,2]#gsub("-1",concat(c("||", sample_output_id[c])), p1[,3])
+      clone = p1[,1]
+      clone = paste (as.numeric(clone), concat(c("||",Overall_sample_groups[o])))
+      clone = gsub(" ", "", clone)
+      cells = strsplit(cells,"||", fixed = T)
+      cell=NULL
+      sample_source = NULL
+      for(i in c(1:length(cells))){
+        cell = c(cell, cells[[i]][1])
+        sample_source = c(sample_source, cells[[i]][2])
+      }
+      m = sample_id [match(sample_source, sample_id)]
+      cells = apply(cbind(cell, m), 1, paste, collapse="||")
+      names(clone) = cells
+      if(types[c] %in% c("TRA")){
+        cells_use = cells[which(cells %in% contig1)]
+        clone_use = clone[cells_use]
+        m_VDJ_TCR[match(cells_use, contig1),"clone1"] = clone_use
+      }
+      if(types[c] %in% c("TRB")){
+        cells_use = cells[which(cells %in% contig2)]
+        clone_use = clone[cells_use]
+        m_VDJ_TCR[match(cells_use, contig2),"clone2"] = clone_use
+      }
+    }
+  }
+  print(concat(c("Number of matched TRA clones: ",length(which(m_VDJ_TCR[,"clone1"]!='-')))))
 }
 
 contig1 = apply(cbind(m_VDJ_BCR[, "contig1"], sample.vector), 1, paste, collapse="||")
 contig2 = apply(cbind(m_VDJ_BCR[, "contig2"], sample.vector), 1, paste, collapse="||")
 
 for(o in c(1:length(Overall_sample_groups))){
-	cluster_file3 = paste0(concat(c(out_dir_raw,"Cluster_identities_")), Overall_sample_groups[o],"_IGH.txt" )
-	cluster_file4 = paste0(concat(c(out_dir_raw,"Cluster_identities_")), Overall_sample_groups[o],"_IGL.txt" )
-	cluster_files = c( cluster_file3, cluster_file4)
-	types = c("IGH","IGL")
-	info = file.info(cluster_files)
-	w = which(info$size != 0)
-	if(length(w)>0){
-		for(c in c(1:length(cluster_files))){
-			p1 <- as.matrix(read.csv(cluster_files[c], head=F, sep="\t"))
-			p1=p1[-1,]
-			cells = p1[,2]
-			clone = p1[,1]
-			clone = paste (as.numeric(clone), concat(c("||",Overall_sample_groups[o])))
-			clone = gsub(" ", "", clone)
-			cells = strsplit(cells,"||", fixed = T)
-			cell=NULL
-			sample_source = NULL
-			for(i in c(1:length(cells))){
-				cell = c(cell, cells[[i]][1])
-				sample_source = c(sample_source, cells[[i]][2])
-			}
-			m = sample_id [match(sample_source, sample_id)]
-			cells = apply(cbind(cell, m), 1, paste, collapse="||")
-			names(clone) = cells
-			if(types[c] %in% c("IGH")){
-			  cells_use = cells[which(cells %in% contig1)]
-			  clone_use = clone[cells_use]
-			  m_VDJ_BCR[match(cells_use, contig1),"clone1"] = clone_use
-			}
-			if(types[c] %in% c("IGL")){
-			  cells_use = cells[which(cells %in% contig2)]
-			  clone_use = clone[cells_use]
-			  m_VDJ_BCR[match(cells_use, contig2),"clone2"] = clone_use
-			}
-		}
-	}
-	print(concat(c("Number of matched IGH clones: ",length(which(m_VDJ_BCR[,"clone1"]!='-')))))
+  cluster_file3 = paste0(concat(c(out_dir_raw,"Cluster_identities_")), Overall_sample_groups[o],"_IGH.txt" )
+  cluster_file4 = paste0(concat(c(out_dir_raw,"Cluster_identities_")), Overall_sample_groups[o],"_IGL.txt" )
+  cluster_files = c( cluster_file3, cluster_file4)
+  types = c("IGH","IGL")
+  info = file.info(cluster_files)
+  w = which(info$size != 0)
+  if(length(w)>0){
+    for(c in c(1:length(cluster_files))){
+      p1 <- as.matrix(read.csv(cluster_files[c], head=F, sep="\t"))
+      p1=p1[-1,]
+      cells = p1[,2]
+      clone = p1[,1]
+      clone = paste (as.numeric(clone), concat(c("||",Overall_sample_groups[o])))
+      clone = gsub(" ", "", clone)
+      cells = strsplit(cells,"||", fixed = T)
+      cell=NULL
+      sample_source = NULL
+      for(i in c(1:length(cells))){
+        cell = c(cell, cells[[i]][1])
+        sample_source = c(sample_source, cells[[i]][2])
+      }
+      m = sample_id [match(sample_source, sample_id)]
+      cells = apply(cbind(cell, m), 1, paste, collapse="||")
+      names(clone) = cells
+      if(types[c] %in% c("IGH")){
+        cells_use = cells[which(cells %in% contig1)]
+        clone_use = clone[cells_use]
+        m_VDJ_BCR[match(cells_use, contig1),"clone1"] = clone_use
+      }
+      if(types[c] %in% c("IGL")){
+        cells_use = cells[which(cells %in% contig2)]
+        clone_use = clone[cells_use]
+        m_VDJ_BCR[match(cells_use, contig2),"clone2"] = clone_use
+      }
+    }
+  }
+  print(concat(c("Number of matched IGH clones: ",length(which(m_VDJ_BCR[,"clone1"]!='-')))))
 }
 
 
@@ -891,6 +933,5 @@ colnames(n_cells) = c("IGH+", "IGK/L+", "IGH+IGK/L+", "TRA+","TRB+","TRA+TRB")
 out_file_table = concat(c(out_dir_raw,"/VDJ_information_n_droplets_", batch,".txt"))
 write.table(n_cells, file = out_file_table, append = FALSE, quote = FALSE, sep = "\t",eol = "\n", na = "NA", dec = ".", row.names = T,col.names = T, qmethod = c("escape", "double"),fileEncoding = "")
 print(concat(c("scp -p mfj169@cluster2.bmrc.ox.ac.uk:", out_file_table," ./ " )))
-
 
 
